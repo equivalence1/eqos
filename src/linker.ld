@@ -10,9 +10,9 @@ SECTIONS {
 
     text_phys_begin = .; /* all this constants are needed for mb_header, see https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Header-address-fields */
     text_virt_begin = . + VIRTUAL_BASE;
-    .bootstrap : { *(.bootstrap) }
+    .bootstrap : { *(.bootstrap) } /* We wont need bootstart after bootstrap phase, so doesn't matter where it will be placed, only that after 1M + SIZEOF_HEADERS */
 
-    . += VIRTUAL_BASE;
+    . += VIRTUAL_BASE; /* location counter sets VMA */
     .text : AT(ADDR(.bootstrap) + SIZEOF(.bootstrap)) { *(.text) } /* AT sets load address (phys) */
 
     data_phys_begin = . - VIRTUAL_BASE;
