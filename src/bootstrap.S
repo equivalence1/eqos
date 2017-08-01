@@ -33,12 +33,47 @@ start_32:
     popl %eax
 
     call check_multiboot
+    call check_cpuid
 
     pushl $ok_message
     call videomem_puts
     addl $4, %esp
 
     hlt
+
+
+/* see http://wiki.osdev.org/CPUID and https://os.phil-opp.com/entering-longmode/
+ * Check if CPUID is supported by attempting to flip the ID bit (bit 21)
+ * in the FLAGS register. If we can flip it, CPUID is available.
+ */
+check_cpuid:
+    // Copy FLAGS in to EAX via stack
+    pushf
+    popl %eax
+    // Copy to ECX as well for comparing later on
+    movl %eax, %ecx
+    // Flip the ID bit
+    xorl $(1 << 21), %eax
+    // Copy EAX to FLAGS via the stack
+    pushl %eax
+    popf
+    // Copy FLAGS back to EAX (with the flipped bit if CPUID is supported)
+    pushf
+    popl %eax
+    // Restore FLAGS from the old version stored in ECX (i.e. flipping the
+    // ID bit back if it was ever flipped).
+    pushl %ecx
+    popf
+    // Compare EAX and ECX. If they are equal then that means the bit
+    // wasn't flipped, and CPUID isn't supported.
+    cmp %eax, %ecx
+    je no_cpuid
+    ret
+
+no_cpuid:
+    push $no_cpuid_message
+    jmp fail
+
 
 /* check that the bootloader is really multiboot-compatible */
 check_multiboot:
@@ -49,14 +84,18 @@ not_multiboot:
     push $not_multiboot_message
     jmp fail
 
+
 fail:
     call videomem_puts
 halt: /* just hlt is not enough -- CPU might continue because of interrupt */
     hlt
     jmp halt
 
+
 not_multiboot_message:
-    .asciz "Not a multiboot compatible bootloader!\n";
+    .asciz "Not a multiboot compatible bootloader\n";
+no_cpuid_message:
+    .asciz "CPUID is not supported\n"
 ok_message:
     .asciz "OK!\n";
 
