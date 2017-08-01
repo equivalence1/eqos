@@ -28,6 +28,10 @@ bootstrap_stack_top:
 start_32:
     movl $bootstrap_stack_top, %esp
 
+    pushl %eax
+    call videomem_clrscr
+    popl %eax
+
     call check_multiboot
 
     pushl $ok_message
