@@ -8,7 +8,7 @@
     .global start_32
 
 /* see https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#OS-image-format for more info */
-    .align 32
+    .align 4
 mb_header_begin:
     .long MB_HEADER_MAGIC
     .long MB_HEADER_FLAGS
@@ -20,13 +20,41 @@ mb_header_begin:
     .long start_32        /* entry_addr */
 
 /* this stack is only to use here, in bootstrap */
+    .align 16 /* System V ABI wants it to be 16-byte aligned */
     .space 0x100
 bootstrap_stack_top:
 
+/* entry point of our OS, still in protected mode now */
 start_32:
     movl $bootstrap_stack_top, %esp
-    movl $0x2f4b2f4f, (0xb8000) /* just print "OK" on screen */
+
+    call check_multiboot
+
+    pushl $ok_message
+    call videomem_puts
+    addl $4, %esp
+
     hlt
+
+/* check that the bootloader is really multiboot-compatible */
+check_multiboot:
+    cmp $0x2badb002, %eax
+    jne not_multiboot
+    ret
+not_multiboot:
+    push $not_multiboot_message
+    jmp fail
+
+fail:
+    call videomem_puts
+halt: /* just hlt is not enough -- CPU might continue because of interrupt */
+    hlt
+    jmp halt
+
+not_multiboot_message:
+    .asciz "Not a multiboot compatible bootloader!\n";
+ok_message:
+    .asciz "OK!\n";
 
 /* this is our normal stack for the rest of the code.
    We can not use it here, in bootstrap because it's VMA
@@ -34,7 +62,7 @@ start_32:
    See this for more info: https://stackoverflow.com/questions/10486116/what-does-this-gcc-error-relocation-truncated-to-fit-mean
    (2nd answer is better) */
     .section .bss
-    .align 0x1000
+    .align 0x1000 /* TODO: Why do we use align both here and in kernel.ld? */
 stack_bottom:
     .space 0x2000
 stack_top:

@@ -1,6 +1,7 @@
 srcdir = src
 objdir = obj
 bindir = bin
+incdir = src/include
 
 CC ?= gcc
 LD ?= gcc
@@ -10,11 +11,11 @@ CFLAGS := -g -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -ffreestanding \
 	-Wframe-larger-than=4096 -Wstack-usage=4096 -Wno-unknown-warning-option
 LFLAGS := -nostdlib -z max-page-size=0x1000
 
-ASM  := bootstrap.S
+ASM  := bootstrap.S videomem.S
 AOBJ := $(ASM:.S=.o)
 ADEP := $(ASM:.S=.d)
 
-SRC := 
+SRC :=
 OBJ := $(AOBJ)
 DEP := $(ADEP)
 
@@ -30,7 +31,10 @@ $(bindir):
 	mkdir -p $(bindir)
 
 %.o: $(srcdir)/%.S
-	$(CC) -D__ASM_FILE__ -g -MMD -c $< -o $(objdir)/$@
+	$(CC) -D__ASM_FILE__ -g -MMD -c -I$(incdir) $< -o $(objdir)/$@
+
+%.o: $(srcdir)/%.c
+	$(CC) $(CFLAGS_X64) -MMD -c -I$(incdir) $< -o $(objdir)/$@
 
 .PHONY: clean
 clean:
