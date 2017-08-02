@@ -34,6 +34,7 @@ start_32:
 
     call check_multiboot
     call check_cpuid
+    call check_long_mode
 
     pushl $ok_message
     call videomem_puts
@@ -42,10 +43,24 @@ start_32:
     hlt
 
 
-/* see http://wiki.osdev.org/CPUID and https://os.phil-opp.com/entering-longmode/
- * Check if CPUID is supported by attempting to flip the ID bit (bit 21)
- * in the FLAGS register. If we can flip it, CPUID is available.
- */
+/* see http://wiki.osdev.org/CPUID and https://os.phil-opp.com/entering-longmode/ for this checks */
+check_long_mode:
+    mov $0x80000000, %eax
+    cpuid
+    cmp $0x80000001, %eax
+    jl no_long_mode
+
+    mov $0x80000001, %eax
+    cpuid
+    test $(1 << 29), %edx
+    jz no_long_mode
+    ret
+
+no_long_mode:
+    push $no_long_mode_message
+    jmp fail
+
+
 check_cpuid:
     // Copy FLAGS in to EAX via stack
     pushf
@@ -96,6 +111,8 @@ not_multiboot_message:
     .asciz "Not a multiboot compatible bootloader\n";
 no_cpuid_message:
     .asciz "CPUID is not supported\n"
+no_long_mode_message:
+    .asciz "long mode is not supported\n"
 ok_message:
     .asciz "OK!\n";
 
