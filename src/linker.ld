@@ -31,11 +31,14 @@ SECTIONS {
     data_phys_end = . - VIRTUAL_BASE;
     data_virt_end = .;
 
-    . = ALIGN(PAGE_SIZE); /* TODO */
+    . = ALIGN(PAGE_SIZE); /* paging + stack should be aligned */
 
     bss_phys_begin = . - VIRTUAL_BASE;
     bss_virt_begin = .;
-    .bss : { *(.bss) }
+    .bss : {
+        . += 6 * PAGE_SIZE; /* this is for initial paging tables */
+        *(.bss)
+    }
     bss_phys_end = . - VIRTUAL_BASE;
     bss_virt_end = .;
 }
