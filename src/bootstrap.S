@@ -19,6 +19,13 @@ mb_header_begin:
     .long bss_phys_end    /* bss_end_addr */
     .long start_32        /* entry_addr */
 
+gdt:
+    .quad 0x0000000000000000 /* zero entry */
+    .quad (1<<43) | (1<<44) | (1<<47) | (1<<53) /* code segment */
+gdt_ptr:
+    .word (gdt_ptr - gdt - 1)
+    .quad gdt
+
 /* this stack is only to use here, in bootstrap */
     .align 16 /* System V ABI wants it to be 16-byte aligned */
     .space 0x100
@@ -37,13 +44,10 @@ start_32:
     call check_long_mode
     call setup_initial_paging
     call enable_paging
+    lgdt (gdt_ptr)
+    ljmp $0x8, $start_64   /* need to update cs register, so ljmp */
 
-    pushl $ok_message
-    call videomem_puts
-    addl $4, %esp
-
-    hlt
-
+    
 #define PTE_PRESENT     (1 << 0)
 #define PTE_WRITE       (1 << 1)
 #define PTE_LARGE       (1 << 7)
@@ -178,8 +182,25 @@ no_cpuid_message:
     .asciz "CPUID is not supported\n"
 no_long_mode_message:
     .asciz "long mode is not supported\n"
-ok_message:
-    .asciz "OK!\n";
+
+
+    .code64
+start_64:
+    movq $stack_top, %rsp
+
+    movw $0, %ax
+    movw %ax, %ss
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+
+    // print OKAY
+    mov $0x2f592f412f4b2f4f, %rax
+    mov %rax, (0xb8000)
+1:
+    hlt
+    jmp 1b
 
     .section .bss
 /* this is our normal stack for the rest of the code.
