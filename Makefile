@@ -15,7 +15,7 @@ ASM  := bootstrap.S videomem.S
 AOBJ := $(ASM:.S=.o)
 ADEP := $(ASM:.S=.d)
 
-SRC := main.c
+SRC := main.c legacy_pic.c
 OBJ := $(AOBJ) $(SRC:.c=.o)
 DEP := $(ADEP)
 
