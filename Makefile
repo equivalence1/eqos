@@ -15,8 +15,8 @@ ASM  := bootstrap.S videomem.S
 AOBJ := $(ASM:.S=.o)
 ADEP := $(ASM:.S=.d)
 
-SRC :=
-OBJ := $(AOBJ)
+SRC := main.c
+OBJ := $(AOBJ) $(SRC:.c=.o)
 DEP := $(ADEP)
 
 all: kernel

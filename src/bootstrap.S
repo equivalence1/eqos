@@ -188,6 +188,7 @@ no_long_mode_message:
 
 
     .code64
+    .extern main
 start_64:
     movq $stack_top, %rsp
 
@@ -201,6 +202,15 @@ start_64:
     // print OKAY
     mov $0x2f592f412f4b2f4f, %rax
     mov %rax, (0xb8000)
+
+    cld
+    movabsq $main, %rax
+
+    call *%rax
+
+// should be unreachable. (return from kernel main???)
+
+    cli
 1:
     hlt
     jmp 1b
