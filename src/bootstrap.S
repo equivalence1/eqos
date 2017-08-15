@@ -19,12 +19,15 @@ mb_header_begin:
     .long bss_phys_end    /* bss_end_addr */
     .long start_32        /* entry_addr */
 
+
 gdt:
-    .quad 0x0000000000000000 /* zero entry */
-    .quad (1<<43) | (1<<44) | (1<<47) | (1<<53) /* code segment */
+    .quad 0x0000000000000000    /* zero entry */
+    .quad 0x00a09a0000000000    /* code segment: bits[55, 53, 47, 44, 43, 41] */
+    .quad 0x00a0920000000000    /* data, etc. segment: bits[55, 53, 47, 44, 41] */
 gdt_ptr:
     .word (gdt_ptr - gdt - 1)
     .quad gdt
+
 
 /* this stack is only to use here, in bootstrap */
     .align 16 /* System V ABI wants it to be 16-byte aligned */
@@ -47,7 +50,7 @@ start_32:
     lgdt (gdt_ptr)
     ljmp $0x8, $start_64   /* need to update cs register, so ljmp */
 
-    
+
 #define PTE_PRESENT     (1 << 0)
 #define PTE_WRITE       (1 << 1)
 #define PTE_LARGE       (1 << 7)
@@ -188,7 +191,7 @@ no_long_mode_message:
 start_64:
     movq $stack_top, %rsp
 
-    movw $0, %ax
+    movw $0x10, %ax
     movw %ax, %ss
     movw %ax, %ds
     movw %ax, %es
