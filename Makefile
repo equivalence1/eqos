@@ -34,7 +34,7 @@ $(bindir):
 	$(CC) -D__ASM_FILE__ -g -MMD -c -I$(incdir) $< -o $(objdir)/$@
 
 %.o: $(srcdir)/%.c
-	$(CC) $(CFLAGS_X64) -MMD -c -I$(incdir) $< -o $(objdir)/$@
+	$(CC) $(CFLAGS) -MMD -c -I$(incdir) $< -o $(objdir)/$@
 
 .PHONY: clean
 clean:
