@@ -27,6 +27,7 @@ SECTIONS {
 
     data_phys_begin = . - VIRTUAL_BASE;
     data_virt_begin = .;
+    .rodata : { *(.rodata) }
     .data : { *(.data) }
     data_phys_end = . - VIRTUAL_BASE;
     data_virt_end = .;
