@@ -55,9 +55,15 @@ int_wrapper:
 
 /* see intel manual, 6.3.1, table 6-1 for the list of exc and ints */
 
-    .global EXC_0
 #define EXC(n) \
+    .align 16; \
 EXC_##n: \
+    pushq $n; \
+    jmp int_wrapper
+
+#define INT(n) \
+    .align 16; \
+INT_##n: \
     pushq $n; \
     jmp int_wrapper
 
@@ -93,11 +99,16 @@ EXC(28)
 EXC(29)
 EXC(30)
 EXC(31)
-EXC(32)
+INT(32)
 
 #define REGISTER_EXC(n) \
     movq $n, %rdi; \
     movq $(EXC_##n), %rsi; \
+    call register_irq_handler
+
+#define REGISTER_INT(n) \
+    movq $n, %rdi; \
+    movq $(INT_##n), %rsi; \
     call register_irq_handler
 
     .global init_execptions_handlers
@@ -137,7 +148,7 @@ init_execptions_handlers:
     REGISTER_EXC(29)
     REGISTER_EXC(30)
     REGISTER_EXC(31)
-    REGISTER_EXC(32)
+    REGISTER_INT(32)
 
     leave
     ret

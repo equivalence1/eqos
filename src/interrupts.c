@@ -4,9 +4,10 @@
 #include <thread_regs.h>
 #include <string.h>
 #include <videomem_print.h>
+#include <legacy_pic.h>
 
 #define IDT_PRESENT              (1ull << 15)
-#define IDT_64INT                14ull
+#define IDT_64INT                14
 
 struct idt_entry {
     uint16_t offset_1;
@@ -25,9 +26,9 @@ struct idt_ptr {
 typedef struct idt_entry idt_entry_t;
 typedef struct idt_ptr idt_ptr_t;
 
-idt_entry_t IDT[256];
+static idt_entry_t IDT[256];
 
-static const char *messages[33] = {
+static const char *messages[32] = {
     "0: Divide Error",
     "1: Debug Excecption",
     "2: NMI Interrupt",
@@ -59,11 +60,10 @@ static const char *messages[33] = {
     "28: Undefined Exception",
     "29: Undefined Exception",
     "30: Undefined Exception",
-    "31: Undefined Exception",
-    "32: Timer",
+    "31: Undefined Exception"
 };
 
-static void set_idt(idt_ptr_t *ptr)
+static inline void set_idt(idt_ptr_t *ptr)
 {
     __asm__ volatile("lidt (%0)" : : "a"(ptr));
 }
@@ -73,8 +73,8 @@ void register_irq_handler(int irqno, uint64_t addr)
     idt_entry_t entry = {0};
 
     entry.offset_1 = addr & MAX_W;
-    entry.offset_2 = (addr & (MAX_W << 16)) >> 16;
-    entry.offset_3 = (addr & (MAX_L << 32)) >> 32;
+    entry.offset_2 = (addr >> 16) & MAX_W;
+    entry.offset_3 = (addr >> 32) & MAX_L;
 
     entry.selector = KERNEL_CODE;
 
@@ -89,11 +89,21 @@ void unregister_irq_handler(int irqno)
     memset(IDT + irqno, 0, sizeof(IDT[irqno]));
 }
 
+void timer_handler(void)
+{
+    video_print("hello from timer.\n");
+    send_eoi(MASTER_PIC);
+}
+
 void int_common_handler(thread_regs_t *regs)
 {
-    (void)sizeof(regs);
+    if (regs->irqno < 32)
+        video_print(messages[regs->irqno]);
 
-    video_print(messages[regs->irqno]);
+    if (regs->irqno == 32) {
+        timer_handler();
+        return;
+    }
 
     while (1);
     return;
@@ -105,7 +115,7 @@ void init_idt(void)
     init_execptions_handlers();
 
     idt_ptr_t ptr = {0};
-    ptr.limit = sizeof(IDT) / sizeof(IDT[0]) - 1;
+    ptr.limit = sizeof(IDT) - 1;
     ptr.base = (uint64_t)IDT;
     set_idt(&ptr);
 }
