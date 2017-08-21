@@ -7,12 +7,12 @@
 
 static inline void int_enable(void)
 {
-    __asm__ volatile("sti");
+    __asm__ volatile("sti" : : : "cc");
 }
 
 static inline void int_disable(void)
 {
-    __asm__ volatile("cli");
+    __asm__ volatile("cli" : : : "c");
 }
 
 void register_irq_handler(int irqno, uint64_t addr);
